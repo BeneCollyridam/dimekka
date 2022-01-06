@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="da">
+<head><meta charset="UTF-8"><title>Hvor er Adam og Eva?</title></head>
+<body>
+<div style="font-size: 30px;" id="tmp">V2</div>
+<div style="height: min(50vw, 50vh); width: min(50vw, 50vh); font-size: min(50vh, 50vw); transform: rotate(-90deg); display: inline-flex; justify-content: center; align-items: center; transform-origin: center;" id="arrow">→</div>
+<br><div id="text" style="display: inline-block; font-size: 25px;"></div>
+<script>
+const φ2 = 55.702086;
+const λ2 = 12.561048;
+window.onload = () => {
+  const div = document.getElementById("tmp");
+  const arrow = document.getElementById("arrow");
+  const text = document.getElementById("text");
+  let φ1 = null;
+  let λ1 = null;
+  let brng = null;
+  let accuracy = Infinity;
+  if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(pos => {
+          if (pos.coords.accuracy < accuracy) {
+            φ1 = pos.coords.latitude;
+            λ1 = pos.coords.longitude;
+            accuracy = pos.coords.accuracy;
+          }
+
+          const y = Math.sin(λ2-λ1) * Math.cos(φ2);
+          const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+          const θ = Math.atan2(y, x);
+          brng = (θ*180/Math.PI + 360) % 360; // in degrees
+          div.innerHTML = `Adam og Eva er kurs ${Math.floor(brng)}°`;
+          arrow.style.transform = `rotate(${brng - 90}deg)`;
+          text.innerHTML = "Roter din enhed så toppen af dit device peger mod nord, og så vil pilen pege mod Adam og Eva";
+      }, undefined, {enableHighAccuracy: true});
+  } else {
+    div.innerHTML = "Geolocation is not supported by this browser.";
+  }
+
+  if (window.DeviceOrientationEvent) {
+      // Listen for the deviceorientation event and handle the raw data
+      let heading;
+      window.addEventListener('deviceorientation', function(eventData) {
+        if (!brng) {
+          return;
+        }
+
+        if(event.webkitCompassHeading) {
+          // Apple works only with this, alpha doesn't work
+          heading = event.webkitCompassHeading;
+        } else {
+          heading = event.alpha
+        }
+
+        if (heading) {
+          const delta = (brng - heading + 540) % 360 - 180;
+          text.innerHTML += heading;
+          div.innerHTML = `Dinn retning ${Math.round(heading)} | Målet ${Math.round(brng)}`;
+          let rotation = delta > 0 ? 0 : 180;
+          arrow.style.transform = `rotate(${-90 + delta}deg)`;
+          text.innerHTML = `Drej så pilen peger "opad"`;
+        }
+      });
+  }
+
+}
+</script>
+</body>
+</html>
